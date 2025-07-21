@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precision Oncology Gene Matching System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .chat-container {
+            height: 65vh;
+            overflow-y: auto;
+        }
+        .message {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .typing-indicator {
+            display: none;
+        }
+        .typing-indicator.show {
+            display: flex;
+        }
+        .dot {
+            height: 8px;
+            width: 8px;
+            margin: 0 2px;
+            background-color: #9CA3AF;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background-color: #3B82F6;
+            color: white;
+        }
+        .tab-button:not(.active):hover {
+            background-color: #F3F4F6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-dna text-blue-600 mr-3"></i>
+                        Precision Oncology Gene Matching System
+                    </h1>
+                    <p class="text-gray-600 mt-2">Match genomic test results to clinical trial eligibility</p>
+                </div>
+                <div class="flex space-x-2">
+                    <div id="f1-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-600">
+                        <i class="fas fa-circle mr-1"></i>F1 System
+                    </div>
+                    <div id="tempus-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-600">
+                        <i class="fas fa-circle mr-1"></i>Tempus System
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-lg shadow-lg mb-6">
+            <div class="flex border-b">
+                <button 
+                    id="f1-tab" 
+                    class="tab-button active flex-1 py-4 px-6 text-center font-semibold border-b-2 border-blue-600"
+                    onclick="switchTab('f1')"
+                >
+                    <i class="fas fa-microscope mr-2"></i>
+                    F1 (Foundation One) Matching
+                </button>
+                <button 
+                    id="tempus-tab" 
+                    class="tab-button flex-1 py-4 px-6 text-center font-semibold border-b-2 border-transparent"
+                    onclick="switchTab('tempus')"
+                >
+                    <i class="fas fa-dna mr-2"></i>
+                    Tempus Matching
+                </button>
+            </div>
+
+            <!-- F1 Tab Content -->
+            <div id="f1-content" class="tab-content active p-6">
+                <div class="mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Foundation One Gene Matching</h2>
+                    <p class="text-gray-600 text-sm">Match Foundation One genomic reports to clinical trials with focus on BRCA and HRD mutations</p>
+                </div>
+                
+                <div id="f1-chat" class="chat-container p-4 bg-gray-50 rounded-lg space-y-4 mb-4">
+                    <div class="message flex items-start">
+                        <div class="bg-blue-100 rounded-lg p-3 max-w-4xl">
+                            <p class="text-gray-800">
+                                <i class="fas fa-robot text-blue-600 mr-2"></i>
+                                Hello! I'm your F1 gene matching assistant. I can help you:
+                            </p>
+                            <ul class="mt-2 text-sm text-gray-600 list-disc list-inside">
+                                <li>Match F1 reports to BRCA studies</li>
+                                <li>Find studies for patients with HRD mutations</li>
+                                <li>Identify which F1 reports have specific mutations</li>
+                                <li>Show comprehensive matching for all reports</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="f1-typing" class="typing-indicator p-4">
+                    <div class="flex items-center">
+                        <div class="bg-gray-200 rounded-lg p-3">
+                            <div class="flex space-x-1">
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex space-x-2">
+                        <input 
+                            id="f1-input" 
+                            type="text" 
+                            placeholder="Ask about F1 gene matching..." 
+                            class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onkeypress="handleKeyPress(event, 'f1')"
+                        >
+                        <button 
+                            onclick="sendMessage('f1')" 
+                            class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="sendExampleQuery('f1', 'What clinical trials are available for BRCA1 mutations?')" 
+                                class="text-xs bg-blue-100 hover:bg-blue-200 px-3 py-2 rounded-full transition-colors">
+                            BRCA1 trials
+                        </button>
+                        <button onclick="sendExampleQuery('f1', 'Match all F1 reports to available studies')" 
+                                class="text-xs bg-blue-100 hover:bg-blue-200 px-3 py-2 rounded-full transition-colors">
+                            Match all reports
+                        </button>
+                        <button onclick="sendExampleQuery('f1', 'What studies match patients with HRD mutations?')" 
+                                class="text-xs bg-blue-100 hover:bg-blue-200 px-3 py-2 rounded-full transition-colors">
+                            HRD mutations
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tempus Tab Content -->
+            <div id="tempus-content" class="tab-content p-6">
+                <div class="mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Tempus Gene Matching</h2>
+                    <p class="text-gray-600 text-sm">Match Tempus genomic reports to clinical trials with focus on KRAS and MSI-H mutations</p>
+                </div>
+                
+                <div id="tempus-chat" class="chat-container p-4 bg-gray-50 rounded-lg space-y-4 mb-4">
+                    <div class="message flex items-start">
+                        <div class="bg-green-100 rounded-lg p-3 max-w-4xl">
+                            <p class="text-gray-800">
+                                <i class="fas fa-robot text-green-600 mr-2"></i>
+                                Hello! I'm your Tempus gene matching assistant. I can help you:
+                            </p>
+                            <ul class="mt-2 text-sm text-gray-600 list-disc list-inside">
+                                <li>Find trials for patients with KRAS mutations</li>
+                                <li>Match Tempus reports to available studies</li>
+                                <li>Identify mutations in Tempus reports</li>
+                                <li>Show studies for MSI-H patients</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tempus-typing" class="typing-indicator p-4">
+                    <div class="flex items-center">
+                        <div class="bg-gray-200 rounded-lg p-3">
+                            <div class="flex space-x-1">
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex space-x-2">
+                        <input 
+                            id="tempus-input" 
+                            type="text" 
+                            placeholder="Ask about Tempus gene matching..." 
+                            class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            onkeypress="handleKeyPress(event, 'tempus')"
+                        >
+                        <button 
+                            onclick="sendMessage('tempus')" 
+                            class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="sendExampleQuery('tempus', 'Find trials for patients with KRAS mutations')" 
+                                class="text-xs bg-green-100 hover:bg-green-200 px-3 py-2 rounded-full transition-colors">
+                            KRAS trials
+                        </button>
+                        <button onclick="sendExampleQuery('tempus', 'Match all Tempus reports to available studies')" 
+                                class="text-xs bg-green-100 hover:bg-green-200 px-3 py-2 rounded-full transition-colors">
+                            Match all reports
+                        </button>
+                        <button onclick="sendExampleQuery('tempus', 'Show studies for patients with MSI-H status')" 
+                                class="text-xs bg-green-100 hover:bg-green-200 px-3 py-2 rounded-full transition-colors">
+                            MSI-H studies
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex justify-center space-x-4">
+            <button onclick="clearHistory()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                <i class="fas fa-broom mr-2"></i>Clear All History
+            </button>
+            <button onclick="checkSystemStatus()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                <i class="fas fa-heartbeat mr-2"></i>Check Status
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'f1';
+
+        // Check system status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSystemStatus();
+        });
+
+        function switchTab(tabName) {
+            // Update current tab
+            currentTab = tabName;
+            
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+                button.classList.remove('border-blue-600', 'border-green-600');
+                button.classList.add('border-transparent');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`${tabName}-content`).classList.add('active');
+            
+            // Activate selected tab button
+            const activeButton = document.getElementById(`${tabName}-tab`);
+            activeButton.classList.add('active');
+            activeButton.classList.remove('border-transparent');
+            
+            if (tabName === 'f1') {
+                activeButton.classList.add('border-blue-600');
+            } else {
+                activeButton.classList.add('border-green-600');
+            }
+        }
+
+        function handleKeyPress(event, system) {
+            if (event.key === 'Enter') {
+                sendMessage(system);
+            }
+        }
+
+        function sendExampleQuery(system, query) {
+            document.getElementById(`${system}-input`).value = query;
+            sendMessage(system);
+        }
+
+        async function sendMessage(system) {
+            const input = document.getElementById(`${system}-input`);
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Clear input
+            input.value = '';
+            
+            // Add user message to chat
+            addMessage(system, message, 'user');
+            
+            // Show typing indicator
+            showTypingIndicator(system);
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        system_type: system
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                const data = await response.json();
+                
+                // Hide typing indicator and add AI response
+                hideTypingIndicator(system);
+                addMessage(system, data.response, 'ai');
+                
+            } catch (error) {
+                hideTypingIndicator(system);
+                addMessage(system, `Sorry, I encountered an error: ${error.message}`, 'error');
+            }
+        }
+
+        function addMessage(system, content, type) {
+            const chatContainer = document.getElementById(`${system}-chat`);
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message flex items-start';
+            
+            let bgColor, icon, textColor;
+            if (type === 'user') {
+                bgColor = 'bg-gray-200';
+                icon = 'fas fa-user';
+                textColor = 'text-gray-800';
+                messageDiv.innerHTML = `
+                    <div class="ml-auto">
+                        <div class="${bgColor} rounded-lg p-3 max-w-4xl">
+                            <p class="${textColor}">
+                                <i class="${icon} mr-2"></i>
+                                ${content}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'ai') {
+                bgColor = system === 'f1' ? 'bg-blue-100' : 'bg-green-100';
+                icon = 'fas fa-robot';
+                const iconColor = system === 'f1' ? 'text-blue-600' : 'text-green-600';
+                textColor = 'text-gray-800';
+                messageDiv.innerHTML = `
+                    <div class="${bgColor} rounded-lg p-3 max-w-4xl">
+                        <div class="${textColor}">
+                            <i class="${icon} ${iconColor} mr-2"></i>
+                            <div class="whitespace-pre-wrap">${content}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'error') {
+                bgColor = 'bg-red-100';
+                icon = 'fas fa-exclamation-triangle';
+                textColor = 'text-red-800';
+                messageDiv.innerHTML = `
+                    <div class="${bgColor} rounded-lg p-3 max-w-4xl">
+                        <p class="${textColor}">
+                            <i class="${icon} text-red-600 mr-2"></i>
+                            ${content}
+                        </p>
+                    </div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTypingIndicator(system) {
+            document.getElementById(`${system}-typing`).classList.add('show');
+        }
+
+        function hideTypingIndicator(system) {
+            document.getElementById(`${system}-typing`).classList.remove('show');
+        }
+
+        async function clearHistory() {
+            try {
+                await fetch('/chat/clear', { method: 'POST' });
+                
+                // Clear both chat UIs
+                ['f1', 'tempus'].forEach(system => {
+                    const chatContainer = document.getElementById(`${system}-chat`);
+                    chatContainer.innerHTML = '';
+                    
+                    // Add welcome message back
+                    const welcomeMessage = system === 'f1' ? 
+                        'Hello! I\'m your F1 gene matching assistant. I can help you match Foundation One genomic reports to clinical trials.' :
+                        'Hello! I\'m your Tempus gene matching assistant. I can help you match Tempus genomic reports to clinical trials.';
+                    
+                    addMessage(system, welcomeMessage, 'ai');
+                });
+                
+            } catch (error) {
+                console.error('Error clearing history:', error);
+            }
+        }
+
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/systems/status');
+                const data = await response.json();
+                
+                // Update F1 status
+                const f1Status = document.getElementById('f1-status');
+                if (data.f1_system.ready) {
+                    f1Status.className = 'px-3 py-1 rounded-full text-sm font-medium bg-green-200 text-green-800';
+                    f1Status.innerHTML = '<i class="fas fa-circle mr-1"></i>F1 System Ready';
+                } else {
+                    f1Status.className = 'px-3 py-1 rounded-full text-sm font-medium bg-red-200 text-red-800';
+                    f1Status.innerHTML = '<i class="fas fa-circle mr-1"></i>F1 System Not Ready';
+                }
+                
+                // Update Tempus status
+                const tempusStatus = document.getElementById('tempus-status');
+                if (data.tempus_system.ready) {
+                    tempusStatus.className = 'px-3 py-1 rounded-full text-sm font-medium bg-green-200 text-green-800';
+                    tempusStatus.innerHTML = '<i class="fas fa-circle mr-1"></i>Tempus System Ready';
+                } else {
+                    tempusStatus.className = 'px-3 py-1 rounded-full text-sm font-medium bg-red-200 text-red-800';
+                    tempusStatus.innerHTML = '<i class="fas fa-circle mr-1"></i>Tempus System Not Ready';
+                }
+                
+            } catch (error) {
+                console.error('Error checking system status:', error);
+            }
+        }
+    </script>
+</body>
+</html>
